@@ -23,6 +23,63 @@
 html{scroll-behavior:smooth}
 body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:100vh;font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased;}
 
+/* LOGIN SCREEN */
+.login-screen{
+  position:fixed;inset:0;z-index:9999;
+  background:var(--bg);
+  display:flex;align-items:center;justify-content:center;
+  padding:1.5rem;
+}
+.login-box{
+  width:100%;max-width:360px;
+}
+.login-mark{
+  width:44px;height:44px;background:var(--gold);border-radius:10px;
+  display:flex;align-items:center;justify-content:center;margin-bottom:20px;
+}
+.login-mark svg{width:22px;height:22px;}
+.login-title{
+  font-size:22px;font-weight:700;color:var(--ink);
+  margin-bottom:4px;letter-spacing:-0.02em;
+}
+.login-sub{font-size:13px;color:var(--ink3);margin-bottom:28px;}
+.login-field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
+.login-field label{font-family:var(--mono);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:var(--ink4);}
+.login-field input{
+  height:44px;padding:0 14px;
+  background:var(--bg2);
+  border:1px solid var(--line2);
+  border-radius:8px;
+  font-family:var(--sans);font-size:14px;color:var(--ink);
+  outline:none;
+  transition:border-color 0.15s,box-shadow 0.15s;
+  width:100%;
+}
+.login-field input:focus{
+  border-color:rgba(254,175,23,0.5);
+  box-shadow:0 0 0 3px rgba(254,175,23,0.1);
+}
+.login-btn{
+  width:100%;height:44px;
+  background:var(--gold);color:#0e0d0b;
+  border:none;border-radius:8px;
+  font-family:var(--sans);font-size:14px;font-weight:700;
+  cursor:pointer;transition:background 0.15s;
+  margin-top:4px;
+  letter-spacing:0.01em;
+}
+.login-btn:hover{background:var(--gold2);}
+.login-btn:active{transform:scale(0.98);}
+.login-error{
+  font-size:12px;color:var(--red);
+  text-align:center;margin-top:10px;
+  min-height:18px;
+}
+.login-footer{
+  margin-top:28px;text-align:center;
+  font-size:11px;color:var(--ink4);
+}
+
 /* LAYOUT */
 .shell{display:flex;min-height:100vh;}
 .sidebar{width:var(--sw);flex-shrink:0;background:var(--bg2);border-right:1px solid var(--line);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:60;overflow-y:auto;transition:transform 0.24s cubic-bezier(.16,1,.3,1);}
@@ -303,6 +360,27 @@ select option{background:var(--bg2);color:var(--ink);}
 </style>
 </head>
 <body>
+<!-- LOGIN SCREEN -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <div class="login-mark">
+      <svg viewBox="0 0 22 22" fill="none">
+        <path d="M11 2C8 2 5.5 4.5 5.5 7.5c0 2 1 3.7 2.5 4.7L6.5 19h9l-1.5-6.8C15.5 11.2 16.5 9.5 16.5 7.5 16.5 4.5 14 2 11 2z" stroke="#0e0d0b" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M8.5 7.5h5M9.2 10h3.6" stroke="#0e0d0b" stroke-width="1.3" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="login-title">Farnell Newton</div>
+    <div class="login-sub">Music Catalog — sign in to continue</div>
+    <div class="login-field">
+      <label>Password</label>
+      <input type="password" id="loginPwd" placeholder="Enter your password" onkeydown="if(event.key==='Enter')doLogin();" autocomplete="current-password"/>
+    </div>
+    <button class="login-btn" onclick="doLogin()">Sign in</button>
+    <div class="login-error" id="loginErr"></div>
+    <div class="login-footer">Private catalog — authorized access only</div>
+  </div>
+</div>
+
 <div class="shell">
 
 <!-- SIDEBAR -->
@@ -1251,6 +1329,37 @@ function toast(msg,type){
   c.appendChild(t);
   setTimeout(function(){t.style.animation='to2 0.16s ease forwards';setTimeout(function(){t.remove();},180);},2600);
 }
+
+// AUTH
+var PWD_HASH='e329939e4cce833148f1342d95c521a9b01f3d6bc662ff9144f86595110eef57';
+var SESSION_KEY='fnMCAuth';
+async function hashPwd(str){
+  var buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(function(b){return b.toString(16).padStart(2,'0');}).join('');
+}
+async function doLogin(){
+  var pwd=document.getElementById('loginPwd').value;
+  var err=document.getElementById('loginErr');
+  if(!pwd){err.textContent='Please enter your password.';return;}
+  var hash=await hashPwd(pwd);
+  if(hash===PWD_HASH){
+    sessionStorage.setItem(SESSION_KEY,'1');
+    document.getElementById('loginScreen').style.display='none';
+    err.textContent='';
+  } else {
+    err.textContent='Incorrect password. Try again.';
+    document.getElementById('loginPwd').value='';
+    document.getElementById('loginPwd').focus();
+  }
+}
+function checkAuth(){
+  if(sessionStorage.getItem(SESSION_KEY)==='1'){
+    document.getElementById('loginScreen').style.display='none';
+  } else {
+    setTimeout(function(){document.getElementById('loginPwd').focus();},100);
+  }
+}
+checkAuth();
 
 // INIT
 populateYearSelect(document.getElementById('dashYear'),THIS_YEAR);
